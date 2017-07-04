@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
+
+import sys
+sys.path.append('./TCPClient/')
+sys.path.append('./WIZ550WebClient/')
+import getopt
 import time
 import socket
-import sys
-import getopt
 import threading
 from TCPClient import TCPClient
 from time import gmtime, strftime
