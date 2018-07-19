@@ -9,6 +9,7 @@ from time import gmtime, strftime
 from comthread import comthread
 from switchthread import switchthread
 from goutthread import goutthread
+from tftpthread import tftpthread
 
 SWITCH_DOWN = '0'
 SWITCH_RELEASE = '1'
@@ -40,16 +41,18 @@ if __name__=='__main__':
 	sw_threads = []
 	gout_threads = []
 	com_threads = []
+	tftpth = tftpthread()
 	
 	for i in range(childnum):
 		t = switchthread(webserver_ips[i])
 		
 		g = goutthread(webserver_ips[i])
 		
-		for j in range(4):
-			c_th = comthread(j, dst_ips[i])
+		for j in range(1):
+			c_th = comthread(4*i + j, dst_ips[i])
 			t.neighbors.append(c_th)
 			g.neighbors.append(c_th)
+			tftpth.neighbors.append(c_th)
 			c_th.start()
 
 		t.start()
@@ -57,6 +60,8 @@ if __name__=='__main__':
 
 		g.start()
 		gout_threads.append(g)
+
+		tftpth.start()
 	
 	
 #	for i in range(childnum*4):
@@ -70,12 +75,13 @@ if __name__=='__main__':
 		except KeyboardInterrupt:
 			for i in range(childnum):
 				
-				for j in range(4):
+				for j in range(1):
 					sw_threads[i].neighbors[j].stop()
 					
 				sw_threads[i].stop()
 				gout_threads[i].stop()
 			
+			tftpth.stop()
 			
 			break
 		
