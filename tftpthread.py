@@ -39,8 +39,9 @@ class tftpthread(threading.Thread):
 					if(self.neighbors[i].is_request) :
 						if(self.neighbors[i].is_start is False):
 							self.neighbors[i].is_start = True
+							sys.stdout.write('[%r] got a ticket\r\n' % i)
 							while(self.neighbors[i].is_start):
 								time.sleep(0.5)
 				
 
-		sys.stdout.write('[TFTPThread %r] Bye! \r\n')
+		sys.stdout.write('[TFTPThread] Bye! \r\n')

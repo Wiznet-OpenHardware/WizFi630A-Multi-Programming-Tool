@@ -76,25 +76,25 @@ class comthread(threading.Thread):
 		self.is_start = False
 		self.timer1 = None
 		
-		if id is 0:
+		if (id % 4) is 0:
 			self.dst_port = 5001
 			self.power_port = 0
 			self.switch_port = 4
 			self.redled_port = 8
 			self.blueled_port = 9
-		elif id is 1:
+		elif (id % 4) is 1:
 			self.dst_port = 5002
 			self.power_port = 1
 			self.switch_port = 5
 			self.redled_port = 10
 			self.blueled_port = 11
-		elif id is 2:
+		elif (id % 4) is 2:
 			self.dst_port = 5003
 			self.power_port = 3
 			self.switch_port = 7
 			self.redled_port = 14
 			self.blueled_port = 15
-		elif id is 3:
+		elif (id % 4) is 3:
 			self.dst_port = 5004
 			self.power_port = 2
 			self.switch_port = 6
@@ -105,12 +105,15 @@ class comthread(threading.Thread):
 		lastnum = int(dst_ip[lastnumindex+1:len(dst_ip)])
 
 		self.module_ip = dst_ip[:lastnumindex+1] + str(lastnum + id + 1) + "\r"
-		sys.stdout.write('module ip: %r\n' % self.module_ip)
+		# sys.stdout.write('module ip: %r\n' % self.module_ip)
 		self.client = TCPClient(2, self.dst_ip, self.dst_port)
 		
 	def stop(self):
 		sys.stdout.write('[ComThread %r] ' % self.id )
 		sys.stdout.write('is shutdowning\r\n')
+		if self.client is not None:
+			self.client.close()
+
 		if self.timer1 is not None:
 			self.timer1.cancel()
 		self.alive = False
@@ -344,8 +347,8 @@ class comthread(threading.Thread):
 						sys.stdout.write(response)
 						# sys.stdout.flush()
 
-						# self.client.write("192.168.10.212\r")
-						self.client.write("192.168.10.235\r")
+						self.client.write("192.168.10.212\r")
+						# self.client.write("192.168.10.235\r")
 						self.timer1.cancel()
 						self.client.working_state = serverIP2_state
 						# sys.stdout.write('\r\nserverIP2_state\r\n')
@@ -369,10 +372,10 @@ class comthread(threading.Thread):
 						# sys.stdout.flush()
 						self.timer1.cancel()
 						self.client.working_state = checkOrder_state
-						# sys.stdout.write('\r\ncheckOrder_state\r\n')
-						# self.timer1 = threading.Timer(30.0, timeoutfunc)
-						# IsTimeout = 0
-						# self.timer1.start()
+						sys.stdout.write('\r\ncheckOrder_state\r\n')
+						self.timer1 = threading.Timer(30.0, timeoutfunc)
+						IsTimeout = 0
+						self.timer1.start()
 						
 						response = ""
 
@@ -387,15 +390,16 @@ class comthread(threading.Thread):
 						self.is_request = True
 					else :
 						if self.is_start is True:
-							# self.timer1.cancel()
+							self.timer1.cancel()
 							self.client.working_state = serverIPDone_state
 							# sys.stdout.write('\r\nserverIPDone_state\r\n')
 
-					# if IsTimeout is 1:
-					# 	sys.stdout.write("checkOrder_state timeout")
-					# 	self.timer1.cancel()
-					# 	self.client.working_state = fail_state
-					# 	sys.stdout.write('\r\nfail_state\r\n')
+					if IsTimeout is 1:
+						sys.stdout.write("checkOrder_state timeout")
+						self.timer1.cancel()
+						self.client.working_state = fail_state
+						self.is_request = False
+						sys.stdout.write('\r\nfail_state\r\n')
 
 				elif self.client.working_state == serverIPDone_state:
 					response = self.client.readline()
@@ -403,7 +407,7 @@ class comthread(threading.Thread):
 						sys.stdout.write(response)
 						# sys.stdout.flush()
 						if ("Input Linux Kernel filename ()" in response) :
-							self.client.write("a.bin\r")
+							self.client.write("std.bin\r")
 							self.client.working_state = filename_state
 							# sys.stdout.write('\r\nfilename_state\r\n')
 
@@ -429,45 +433,46 @@ class comthread(threading.Thread):
 					# 	sys.stdout.write('\r\nfail_state\r\n')
 
 				elif self.client.working_state == filenameDone_state:
-					# ch = self.client.read()
-					# if(ch != ''):
-					# 	self.client.str_list.append(ch)
-					# 	sys.stdout.write("%c" % ch)
-					# 	# sys.stdout.flush()
-			
-					# 	if(ch == '\r'):
-					# 		response = ''.join(self.client.str_list)
-					# 		# sys.stdout.write('[%r-%r]' % (self.bank, self.id))
-					# 		del self.client.str_list[:]
-					# 		if("raspi_erase_write:" in response):
-					# 			# self.timer1.cancel()
-					# 			self.client.working_state = tftpDone_state
-					# 			# sys.stdout.write('\r\ntftpDone_state\r\n')
-					# 			self.is_request = False
-					# 			self.is_start = False
-					# 			# self.timer1 = threading.Timer(30.0, timeoutfunc)
-					# 			# IsTimeout = 0
-					# 			# self.timer1.start()
-					# 		elif ("Retry count exceeded; starting again" in response) :
-					# 			self.client.retrycount += 1
-					# 			# logger.debug("retrycount: %r\r\n" % self.client.retrycount)
-					# 			if(self.client.retrycount >= 10):
-					# 				self.client.retrycount = 0
-					# 				self.client.working_state = fail_state
-					# 				sys.stdout.write('\r\nfail_state\r\n')
-
-					# 		response = ""
-					# # if IsTimeout is 1:
-					# # 	sys.stdout.write("filenameDone_state timeout")
-					# # 	self.timer1.cancel()
-					# # 	self.client.working_state = fail_state
-					# # 	sys.stdout.write('\r\nfail_state\r\n')
-
-				# elif self.client.working_state == tftpDone_state:
 					ch = self.client.read()
 					if(ch != ''):
 						self.client.str_list.append(ch)
 						sys.stdout.write("%c" % ch)
+						# sys.stdout.flush()
+			
+						if(ch == '\r'):
+							response = ''.join(self.client.str_list)
+							# sys.stdout.write('[%r-%r]' % (self.bank, self.id))
+							del self.client.str_list[:]
+							if("done" in response):
+								# self.timer1.cancel()
+								self.client.working_state = tftpDone_state
+								# sys.stdout.write('\r\ntftpDone_state\r\n')
+								self.is_request = False
+								self.is_start = False
+								# self.timer1 = threading.Timer(30.0, timeoutfunc)
+								# IsTimeout = 0
+								# self.timer1.start()
+							elif ("Retry count exceeded; starting again" in response) :
+								self.client.retrycount += 1
+								# logger.debug("retrycount: %r\r\n" % self.client.retrycount)
+								if(self.client.retrycount >= 10):
+									self.client.retrycount = 0
+									self.client.working_state = fail_state
+									sys.stdout.write('\r\nfail_state\r\n')
+
+							response = ""
+					# if IsTimeout is 1:
+					# 	sys.stdout.write("filenameDone_state timeout")
+					# 	self.timer1.cancel()
+					# 	self.client.working_state = fail_state
+					# 	sys.stdout.write('\r\nfail_state\r\n')
+
+				elif self.client.working_state == tftpDone_state:
+					ch = self.client.read()
+					if(ch != ''):
+						self.client.str_list.append(ch)
+						# if(ch is '#'):
+						# sys.stdout.write("%c" % ch)
 						# sys.stdout.flush()
 			
 						if(ch == '\r'):
@@ -480,6 +485,8 @@ class comthread(threading.Thread):
 								self.client.write("\r\n\r\n")
 								self.client.working_state = done_state
 								sys.stdout.write('\r\done_state\r\n')
+								# self.is_start = False
+								# self.is_request = False
 								# self.timer1 = threading.Timer(10.0, timeoutfunc)
 								# IsTimeout = 0
 								# self.timer1.start()
@@ -493,8 +500,8 @@ class comthread(threading.Thread):
 					response = self.client.readline()
 					if(response != ""):
 						sys.stdout.write(response)
-						# if ("root@" in response) : #Standard
-						if ("IPS-231-0000 login:" in response) : #SOS intelliport
+						if ("root@" in response) : #Standard
+						# if ("IPS-231-0000 login:" in response) : #SOS intelliport
 							sys.stdout.write(response)
 							sys.stdout.write("\r\n")
 							sys.stdout.flush()
