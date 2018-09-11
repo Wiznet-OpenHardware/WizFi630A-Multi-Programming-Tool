@@ -40,7 +40,7 @@ class goutthread(threading.Thread):
 		
 		while self.alive:
 			if(len(self.neighbors) > 0):
-				for i in range(1):
+				for i in range(4):
 					outputs_len = len(self.neighbors[i].outputs)
 					if outputs_len > 0:
 						# get first item from list and its data is another list which consists of portnum and value

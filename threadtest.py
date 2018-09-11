@@ -48,7 +48,7 @@ if __name__=='__main__':
 		
 		g = goutthread(webserver_ips[i])
 		
-		for j in range(1):
+		for j in range(4):
 			c_th = comthread(4*i + j, dst_ips[i])
 			t.neighbors.append(c_th)
 			g.neighbors.append(c_th)
@@ -61,8 +61,8 @@ if __name__=='__main__':
 		g.start()
 		gout_threads.append(g)
 
-		tftpth.start()
-	
+	tftpth.start()
+		
 	
 #	for i in range(childnum*4):
 #		com_threads[i].start()
@@ -75,7 +75,7 @@ if __name__=='__main__':
 		except KeyboardInterrupt:
 			for i in range(childnum):
 				
-				for j in range(1):
+				for j in range(4):
 					sw_threads[i].neighbors[j].stop()
 					
 				sw_threads[i].stop()
