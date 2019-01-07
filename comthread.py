@@ -48,6 +48,7 @@ gout_1_state = 18
 gout_2_state = 19
 checkOrder_state = 20
 tftpDone_state = 21
+flashVerified_state = 22
 
 SOCK_CLOSE_STATE = 1
 SOCK_OPENTRY_STATE = 2
@@ -472,11 +473,42 @@ class comthread(threading.Thread):
 					if(ch != ''):
 						self.client.str_list.append(ch)
 						# if(ch is '#'):
-						# sys.stdout.write("%c" % ch)
-						# sys.stdout.flush()
+						# 	sys.stdout.write("%c" % ch)
+						# 	sys.stdout.flush()
 			
 						if(ch == '\r'):
 							response = ''.join(self.client.str_list)
+							# sys.stdout.write(response)
+							sys.stdout.write('%r' % self.id)
+							del self.client.str_list[:]
+							if ("Verifying Checksum ... Bad Data CRC" in response) :
+								# self.timer1.cancel()
+								sys.stdout.write('Flashing Failed. Bad CRC\r\n')
+								self.client.write("\r\n\r\n")
+								self.client.working_state = fail_state
+								sys.stdout.write('\r\fail_state\r\n')
+								# self.is_start = False
+								# self.is_request = False
+								# self.timer1 = threading.Timer(10.0, timeoutfunc)
+								# IsTimeout = 0
+								# self.timer1.start()
+							elif ("Verifying Checksum ... OK" in response) :
+								self.client.working_state = flashVerified_state
+								sys.stdout.write('\r\nflashverified_state\r\n')
+							
+							response = ""
+
+				elif self.client.working_state == flashVerified_state:
+					ch = self.client.read()
+					if(ch != ''):
+						self.client.str_list.append(ch)
+						# if(ch is '#'):
+						# 	sys.stdout.write("%c" % ch)
+						# 	sys.stdout.flush()
+			
+						if(ch == '\r'):
+							response = ''.join(self.client.str_list)
+							# sys.stdout.write(response)
 							sys.stdout.write('%r' % self.id)
 							del self.client.str_list[:]
 							if ("Please press Enter to activate this console." in response) :
