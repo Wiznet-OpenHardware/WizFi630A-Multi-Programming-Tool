@@ -3,4 +3,4 @@
 	url = https://github.com/javakys/TCPClient
 [submodule "WIZ550WebClient"]
 	path = WIZ550WebClient
-	url = ../WIZ550WebClient
+	url = https://github.com/javakys/WIZ550WebClient
