@@ -2,8 +2,8 @@
 
 
 import sys
-sys.path.append('../TCPClient/')
-sys.path.append('../WIZ550WebClient/')
+sys.path.append('./TCPClient/')
+sys.path.append('./WIZ550WebClient/')
 import getopt
 import time
 import socket
