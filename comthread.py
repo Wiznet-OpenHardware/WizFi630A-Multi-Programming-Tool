@@ -2,8 +2,8 @@
 
 
 import sys
-sys.path.append('./TCPClient/')
-sys.path.append('./WIZ550WebClient/')
+sys.path.append('../TCPClient/')
+sys.path.append('../WIZ550WebClient/')
 import time
 import socket
 import getopt
@@ -127,14 +127,14 @@ class comthread(threading.Thread):
 			if self.client.state is SOCK_CLOSE_STATE:
 				cur_state = self.client.state
 				self.client.state = self.client.open()
-#				if self.client.state != cur_state:
-#					print(self.client.state) 
+				# if self.client.state != cur_state:
+				# 	print(self.client.state) 
 			
 			elif self.client.state is SOCK_OPEN_STATE:
 				cur_state = self.client.state
 				self.client.state = self.client.connect()
-#				if self.client.state != cur_state:
-#					print(self.client.state) 
+				# if self.client.state != cur_state:
+				# 	print(self.client.state) 
 			
 			elif self.client.state is SOCK_CONNECT_STATE:
 				if self.client.working_state == idle_state:
@@ -578,4 +578,4 @@ class comthread(threading.Thread):
 
 		
 		sys.stdout.write('[ComThread %r] Bye! \r\n' % self.id)
-		self.client.close()
+		# self.client.close()

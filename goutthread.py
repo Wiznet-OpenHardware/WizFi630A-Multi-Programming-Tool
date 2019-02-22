@@ -2,8 +2,8 @@
 
 
 import sys
-sys.path.append('./TCPClient/')
-sys.path.append('./WIZ550WebClient/')
+sys.path.append('../TCPClient/')
+sys.path.append('../WIZ550WebClient/')
 import getopt
 import time
 import socket
@@ -51,7 +51,8 @@ class goutthread(threading.Thread):
 						val = item[1]
 						msg = item[2]
 						sys.stdout.write("[%s]bank%d : %s\r\n" % (self.webserver_ip, i, msg))
-						self.webclient.setGOUTvalue(portnum, val)
+						if(self.webclient.setGOUTvalue(portnum, val) is False):
+							self.neighbors[i].outputs.insert(0, [portnum, val, msg])
 
 						time.sleep(0.5)
 

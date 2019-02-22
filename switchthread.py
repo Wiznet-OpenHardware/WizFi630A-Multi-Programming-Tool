@@ -2,8 +2,8 @@
 
 
 import sys
-sys.path.append('./TCPClient/')
-sys.path.append('./WIZ550WebClient/')
+sys.path.append('../TCPClient/')
+sys.path.append('../WIZ550WebClient/')
 import time
 import socket
 import getopt
@@ -40,7 +40,6 @@ class switchthread(threading.Thread):
 		
 		while self.alive:
 			value = self.webclient.getGINstateall()
-			
 			for i in range(4):
 				if(self.webclient.inputs[self.channels[i]] == SWITCH_DOWN):
 					if(self.channelstates[i] == SWITCH_RELEASE):

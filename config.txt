@@ -1,0 +1,7 @@
+Number of Board: 2
+WebServer IP[0]: 192.168.10.10
+WIZ145SR IP[0]: 192.168.10.20
+WebServer IP[1]: 192.168.10.30
+WIZ145SR IP[1]: 192.168.10.40
+binary Filename: a.bin 
+Finish Indicating String: root@
