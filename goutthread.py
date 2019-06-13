@@ -46,13 +46,13 @@ class goutthread(threading.Thread):
 						# get first item from list and its data is another list which consists of portnum and value
 #						sys.stdout.write('len of outputs queue is %r\r\n' % outputs_len)
 						item = self.neighbors[i].outputs.pop()
-						sys.stdout.write('%r\r\n' % item)
+						# sys.stdout.write('%r\r\n' % item)
 						portnum = item[0]
 						val = item[1]
 						msg = item[2]
-						sys.stdout.write("[%s]bank%d : %s\r\n" % (self.webserver_ip, i, msg))
+						# sys.stdout.write("[%s]bank%d : %s\r\n" % (self.webserver_ip, i, msg))
 						self.webclient.setGOUTvalue(portnum, val)
 
-						time.sleep(0.5)
+						# time.sleep(0.2)
 
 		sys.stdout.write('[GOutThread %r] Bye! \r\n' % self.id)

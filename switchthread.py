@@ -44,15 +44,15 @@ class switchthread(threading.Thread):
 			for i in range(4):
 				if(self.webclient.inputs[self.channels[i]] == SWITCH_DOWN):
 					if(self.channelstates[i] == SWITCH_RELEASE):
-						sys.stdout.write('Switch[%r] pressed down\r\n' % self.channels[i])
+						# sys.stdout.write('Switch pressed down---------------------------- [%r] \r\n' % self.channels[i])
 						self.channelstates[i] = SWITCH_DOWN
 						self.neighbors[i].command = start_msg
 				else:			
 					if(self.channelstates[i] == SWITCH_DOWN):
-						sys.stdout.write('Switch[%r] released up\r\n' % self.channels[i])
+						# sys.stdout.write('Switch[%r] released up\r\n' % self.channels[i])
 						self.channelstates[i] = SWITCH_RELEASE
 						self.neighbors[i].command = end_msg
-			time.sleep(0.5)
+			# time.sleep(0.5)
 			
 
 		sys.stdout.write('[KeyInCheckThread %r] Bye! \r\n' % self.id)

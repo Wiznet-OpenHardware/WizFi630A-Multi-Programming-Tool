@@ -48,7 +48,14 @@ gout_1_state = 18
 gout_2_state = 19
 checkOrder_state = 20
 tftpDone_state = 21
-flashVerified_state = 22
+#daniel
+mac_check_1_state = 22
+mac_check_2_state = 23
+mac_check_3_state = 24
+mac_check_4_state = 25
+mac_check_5_state = 26
+
+flashVerified_state = 27
 
 SOCK_CLOSE_STATE = 1
 SOCK_OPENTRY_STATE = 2
@@ -64,7 +71,9 @@ def timeoutfunc():
 	IsTimeout = 1
 
 class comthread(threading.Thread):
-	def __init__(self, id, dst_ip):
+	# def __init__(self, id, dst_ip):
+	def __init__(self, id, dst_ip, steps):
+    		
 		threading.Thread.__init__(self)
 		self.exitflag = False
 		self.bank = 0
@@ -76,6 +85,9 @@ class comthread(threading.Thread):
 		self.is_request = False
 		self.is_start = False
 		self.timer1 = None
+		#daniel
+		self.steps = steps
+		self.readableMacaddr = []
 		
 		if (id % 4) is 0:
 			self.dst_port = 5001
@@ -108,7 +120,7 @@ class comthread(threading.Thread):
 		self.module_ip = dst_ip[:lastnumindex+1] + str(lastnum + id + 1) + "\r"
 		# sys.stdout.write('module ip: %r\n' % self.module_ip)
 		self.client = TCPClient(2, self.dst_ip, self.dst_port)
-		
+
 	def stop(self):
 		sys.stdout.write('[ComThread %r] ' % self.id )
 		sys.stdout.write('is shutdowning\r\n')
@@ -150,13 +162,13 @@ class comthread(threading.Thread):
 		
 				elif self.client.working_state == check_sw_1_state:
 						if(self.command == keypressed_msg):
-							sys.stdout.write('[ComThread %r] got key pressed message\r\n' % self.id)
+							sys.stdout.write('[ComThread] got key pressed message ----------[%r] \r\n' % self.id)
 							self.command = idle_msg
 							self.client.working_state = check_sw_2_state
 											
 				elif self.client.working_state == check_sw_2_state:
 					if(self.command == keyreleased_msg):
-						sys.stdout.write('[ComThread %r] got keyreleased message\r\n' % self.id)
+						# sys.stdout.write('[ComThread %r] got keyreleased message\r\n' % self.id)
 						self.command = idle_msg
 						self.client.working_state = ready_state
 
@@ -164,26 +176,27 @@ class comthread(threading.Thread):
 					try:
 						self.outputs.insert(0, [self.redled_port, LED_OFF, 'RED LED OFF'])
 						self.outputs.insert(0, [self.blueled_port, LED_OFF, 'BLUE LED OFF'])
-						self.outputs.insert(0, [self.power_port, POWER_ON, 'POWER ON'])
-						self.outputs.insert(0, [self.redled_port, LED_ON, 'RED LED ON'])
+						self.outputs.insert(0, [self.power_port, POWER_ON, 'POWER ON']) #power
+						self.outputs.insert(0, [self.redled_port, LED_ON, 'RED LED ON']) #reset pin
 						self.outputs.insert(0, [self.redled_port, LED_OFF, 'RED LED OFF'])
 						
 							
 						self.client.working_state = gout_1_state
-						sys.stdout.write('timer1 start\r\n')
+						# sys.stdout.write('timer1 start\r\n')
 						self.timer1 = threading.Timer(10.0, timeoutfunc)
 						IsTimeout = 0
 						self.timer1.start()
 					except Exception as e:
 						sys.stdout.write('%r\r\n' % e)
-						sys.stdout.write('timer1 stop\r\n')
+						# sys.stdout.write('timer1 stop\r\n')
 						self.timer1.cancel()
 						time.sleep(1)
 			
 				elif self.client.working_state == gout_1_state:
 					if(len(self.outputs) == 0):
-						self.client.working_state = init_state
-						sys.stdout.write('\r\ninit_state\r\n')
+						self.client.working_state = mac_check_1_state
+						self.timer1.cancel()
+						# sys.stdout.write('\r\ninit_state\r\n')
 					else:
 						time.sleep(0.5)
 					
@@ -191,390 +204,128 @@ class comthread(threading.Thread):
 						# self.timer1.cancel()
 						self.client.outputs.remove()
 						self.client.working_state = idle_state
-							
-				elif self.client.working_state == init_state:					
-					response = self.client.readline()
-					# logger.debug("[init_state] [%r] %r" % (len(response), response))
-					if(response != ""):
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-						if ("9: Load Boot Loader code then write to Flash via TFTP." in response) :
-							self.client.write("2")
-							# print 'timer1 stop'
-							self.timer1.cancel()
-							self.client.working_state = menuselect_state
+#start daniel
+				elif self.client.working_state == mac_check_1_state:
+					if( "MACCHECK" in self.steps):
+						response = self.client.readline()
+						# logger.debug("[mac_check_1_state] [%r] %r" % (len(response), response))
+						if(response != ""):
+							# sys.stdout.write(response)
+							# sys.stdout.flush()
+							if ("9: Load Boot Loader code then write to Flash via TFTP." in response) :
+								self.client.write('4')
 
-							sys.stdout.write('\r\nmenuselect_state\r\n')
-							self.timer1 = threading.Timer(3.0, timeoutfunc)
-							IsTimeout = 0
-							self.timer1.start()
-					response = ""
+								self.timer1.cancel()
+								self.client.working_state = mac_check_2_state
+
+								# sys.stdout.write('\r\nmac_check_2_state\r\n')
+								self.timer1 = threading.Timer(3.0, timeoutfunc)
+								# sys.stdout.write('timer1 start in mac_check_1_state')
+								self.timer1.start()
+								IsTimeout = 0
+
+						response = ""
+
+						# if IsTimeout is 1:
+						# 	sys.stdout.write("mac_check_1_state timeout")
+						# 	self.client.working_state = fail_state
+						# 	sys.stdout.write('\r\nfail_state\r\n')
+					else:
+						self.client.working_state = done_state
+
+				elif self.client.working_state == mac_check_2_state:
+					response = self.client.readline()
 				
-					if IsTimeout is 1:
-						sys.stdout.write("init_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
-						sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == menuselect_state:
-					response = self.client.readline()
 					if(response != ""):
-						sys.stdout.write(response)
+						# sys.stdout.write(response)
 						# sys.stdout.flush()
-						if ("Warning!! Erase Linux in Flash then burn new one. Are you sure?(Y/N)" in response) :
-							self.client.write("Y")
 
+						if ("WizFi630A # " in response) :
+							self.client.write("printenv ethaddr\r\n")
+							self.client.working_state = mac_check_3_state
 							self.timer1.cancel()
-							self.client.working_state = flasherase_state
-							# sys.stdout.write('\r\nflasherase_state\r\n')
+							# sys.stdout.write('timer1 cancel in if clause in mac_check_2_state')
+							# sys.stdout.write('\r\mac_check_2_state\r\n')
 
-							self.timer1 = threading.Timer(3.0, timeoutfunc)
-							IsTimeout = 0
+							self.timer1 = threading.Timer(5.0, timeoutfunc)
 							self.timer1.start()
-						elif ("3: System Boot system code via Flash" in response):
+							IsTimeout = 0
+							# sys.stdout.write('timer1 start in if clause in mac_check_2_state')
+
+						elif ("Starting kernel" in response):
 							self.timer1.cancel()
 							self.client.working_state = fail_state
 							sys.stdout.write('\r\nfail_state\r\n')
 
-							self.timer1 = threading.Timer(3.0, timeoutfunc)
-							IsTimeout = 0
-							self.timer1.start()
-
-					response = ""
-				
-					if IsTimeout is 1:
-						sys.stdout.write("menuselect_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
-						sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == flasherase_state:
-					response = self.client.readline()
-					if(response != ""):
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-						if ("Input device IP (10.10.10.123)" in response) :
-							for i in range(12):
-								self.client.write("\b \b")
-								time.sleep(0.1)
-							self.timer1.cancel()
-							self.client.working_state = localIP_state				
-							# sys.stdout.write('\r\nlocalIP_state\r\n')
-							self.timer1 = threading.Timer(3.0, timeoutfunc)
-							IsTimeout = 0
-							self.timer1.start()
+   
 						response = ""
 			
 					if IsTimeout is 1:
-						sys.stdout.write("flasherase_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
+						sys.stdout.write("\r\nmac_check_2_state timeout\r\n")
 						sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == localIP_state:
-	
-					response = self.client.readline()
-					if (response != "") :
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-						response = ""
-						self.timer1.cancel()
-						self.client.write(self.module_ip)
-						self.client.working_state = localIP2_state
-						# sys.stdout.write('\r\nlocalIP2_state\r\n')
-					
-						self.timer1 = threading.Timer(3.0, timeoutfunc)
-						IsTimeout = 0
-						self.timer1.start()
-						response = ""
-				
-					if IsTimeout is 1:
-						sys.stdout.write("localIP_state timeout")
-						self.timer1.cancel()
+						sys.stdout.flush()
 						self.client.working_state = fail_state
-						sys.stdout.write('\r\nfail_state\r\n')
 
-				elif self.client.working_state == localIP2_state:
-	
+				elif self.client.working_state == mac_check_3_state:
 					response = self.client.readline()
-					if(response != ""):
-						sys.stdout.write(response)
+					# sys.stdout.write(response)
+					# sys.stdout.flush()
+					if("ethaddr=" in response):
+						# sys.stdout.write(response)
 						# sys.stdout.flush()
-					
-						self.timer1.cancel()
-						self.client.working_state = localIPDone_state
-						# sys.stdout.write('\r\nlocalIPDone_state\r\n')
-						self.timer1 = threading.Timer(3.0, timeoutfunc)
-						IsTimeout = 0
-						self.timer1.start()
-				
-						response = ""
-
-					if IsTimeout is 1:
-						sys.stdout.write("localIP2_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
-						sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == localIPDone_state:
-					response = self.client.readline()
-					if(response != ""):
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-						if ("Input server IP (10.10.10.3)" in response) :
-							for i in range(10):
-								self.client.write("\b \b")
-								time.sleep(0.1)
-						
-							self.timer1.cancel()
-							self.client.working_state = serverIP_state
-							# sys.stdout.write('\r\nserverIP_state\r\n')
-							self.timer1 = threading.Timer(3.0, timeoutfunc)
-							IsTimeout = 0
-							self.timer1.start()
-					
-						response = ""
-	
-					if IsTimeout is 1:
-						sys.stdout.write("localIPDone_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
-						sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == serverIP_state:
-			
-					response = self.client.readline()
-					if(response != ""):
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-
-						self.client.write("192.168.10.212\r")
-						# self.client.write("192.168.10.235\r")
-						self.timer1.cancel()
-						self.client.working_state = serverIP2_state
-						# sys.stdout.write('\r\nserverIP2_state\r\n')
-						self.timer1 = threading.Timer(3.0, timeoutfunc)
-						IsTimeout = 0
-						self.timer1.start()
-						response = ""
-
-					if IsTimeout is 1:
-						sys.stdout.write("serverIP_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
-						sys.stdout.write('\r\nfail_state\r\n')
-					
-				elif self.client.working_state == serverIP2_state:
-			
-					response = self.client.readline()
-
-					if(response != ""):
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-						self.timer1.cancel()
-						self.client.working_state = checkOrder_state
-						sys.stdout.write('\r\ncheckOrder_state\r\n')
-						self.timer1 = threading.Timer(30.0, timeoutfunc)
-						IsTimeout = 0
-						self.timer1.start()
-						
-						response = ""
-
-					if IsTimeout is 1:
-						sys.stdout.write("serverIP2_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
-						# sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == checkOrder_state:
-					if self.is_request is False:
-						self.is_request = True
-					else :
-						if self.is_start is True:
-							self.timer1.cancel()
-							self.client.working_state = serverIPDone_state
-							# sys.stdout.write('\r\nserverIPDone_state\r\n')
-
-					if IsTimeout is 1:
-						sys.stdout.write("checkOrder_state timeout")
-						self.timer1.cancel()
-						self.client.working_state = fail_state
-						self.is_request = False
-						sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == serverIPDone_state:
-					response = self.client.readline()
-					if(response != ""):
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-						if ("Input Linux Kernel filename ()" in response) :
-							self.client.write("std.bin\r")
-							self.client.working_state = filename_state
-							# sys.stdout.write('\r\nfilename_state\r\n')
-
-						response = ""
-			
-				elif self.client.working_state == filename_state:
-					response = self.client.readline()
-					if(response != ""):
-						sys.stdout.write(response)
-						# sys.stdout.flush()
-						# self.timer1.cancel()
-						self.client.working_state = filenameDone_state	
-						# sys.stdout.write('\r\nfilenameDone_state\r\n')
-						# self.timer1 = threading.Timer(30.0, timeoutfunc)
-						# IsTimeout = 0
-						# self.timer1.start()
-					response = ""
-	
-					# if IsTimeout is 1:
-					# 	sys.stdout.write("filename_state timeout")
-					# 	self.timer1.cancel()
-					# 	self.client.working_state = fail_state
-					# 	sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == filenameDone_state:
-					ch = self.client.read()
-					if(ch != ''):
-						self.client.str_list.append(ch)
-						sys.stdout.write("%c" % ch)
-						# sys.stdout.flush()
-			
-						if(ch == '\r'):
-							response = ''.join(self.client.str_list)
-							# sys.stdout.write('[%r-%r]' % (self.bank, self.id))
-							del self.client.str_list[:]
-							if("done" in response):
-								# self.timer1.cancel()
-								self.client.working_state = tftpDone_state
-								# sys.stdout.write('\r\ntftpDone_state\r\n')
-								self.is_request = False
-								self.is_start = False
-								# self.timer1 = threading.Timer(30.0, timeoutfunc)
-								# IsTimeout = 0
-								# self.timer1.start()
-							elif ("Retry count exceeded; starting again" in response) :
-								self.client.retrycount += 1
-								# logger.debug("retrycount: %r\r\n" % self.client.retrycount)
-								if(self.client.retrycount >= 10):
-									self.client.retrycount = 0
-									self.client.working_state = fail_state
-									sys.stdout.write('\r\nfail_state\r\n')
-
-							response = ""
-					# if IsTimeout is 1:
-					# 	sys.stdout.write("filenameDone_state timeout")
-					# 	self.timer1.cancel()
-					# 	self.client.working_state = fail_state
-					# 	sys.stdout.write('\r\nfail_state\r\n')
-
-				elif self.client.working_state == tftpDone_state:
-					ch = self.client.read()
-					if(ch != ''):
-						self.client.str_list.append(ch)
-						# if(ch is '#'):
-						# 	sys.stdout.write("%c" % ch)
-						# 	sys.stdout.flush()
-			
-						if(ch == '\r'):
-							response = ''.join(self.client.str_list)
+						if("00:08:DC" in response):
+							self.client.working_state = mac_check_4_state
 							# sys.stdout.write(response)
-							sys.stdout.write('%r' % self.id)
-							del self.client.str_list[:]
-							if ("Verifying Checksum ... Bad Data CRC" in response) :
-								# self.timer1.cancel()
-								sys.stdout.write('Flashing Failed. Bad CRC\r\n')
-								self.client.write("\r\n\r\n")
-								self.client.working_state = fail_state
-								sys.stdout.write('\r\fail_state\r\n')
-								# self.is_start = False
-								# self.is_request = False
-								# self.timer1 = threading.Timer(10.0, timeoutfunc)
-								# IsTimeout = 0
-								# self.timer1.start()
-							elif ("Verifying Checksum ... OK" in response) :
-								self.client.working_state = flashVerified_state
-								sys.stdout.write('\r\nflashverified_state\r\n')
-							
-							response = ""
+							# sys.stdout.write("\r\nIt is correct WIZnet MAC address\r\n")
+							# self.readableMacaddr.insert(0, [self.power_port, response.split('=')[1]])
+							# print(type(response), str(response))
 
-				elif self.client.working_state == flashVerified_state:
-					ch = self.client.read()
-					if(ch != ''):
-						self.client.str_list.append(ch)
-						# if(ch is '#'):
-						# 	sys.stdout.write("%c" % ch)
-						# 	sys.stdout.flush()
-			
-						if(ch == '\r'):
-							response = ''.join(self.client.str_list)
-							# sys.stdout.write(response)
-							sys.stdout.write('%r' % self.id)
-							del self.client.str_list[:]
-							if ("Please press Enter to activate this console." in response) :
-								# self.timer1.cancel()
-								sys.stdout.write('enter CRLF \r\n')
-								self.client.write("\r\n\r\n")
-								self.client.working_state = done_state
-								sys.stdout.write('\r\done_state\r\n')
-								# self.is_start = False
-								# self.is_request = False
-								# self.timer1 = threading.Timer(10.0, timeoutfunc)
-								# IsTimeout = 0
-								# self.timer1.start()
-							elif ("failsafe button BTN_1 was pressed" in response) :
-								self.client.working_state = done_state
-								sys.stdout.write('\r\ndone_state\r\n')
-							
-							response = ""
-			
-				elif self.client.working_state == done_state:
-					response = self.client.readline()
-					if(response != ""):
-						sys.stdout.write(response)
-						if ("root@" in response) : #Standard
-						# if ("IPS-231-0000 login:" in response) : #SOS intelliport
-							sys.stdout.write(response)
-							sys.stdout.write("\r\n")
-							sys.stdout.flush()
-							self.client.write("\r")
-							sys.stdout.write("===============================================\n")
-							sys.stdout.write(" Bank %r, ID %r Firmware Update Succeeded!!!\n" % (self.bank, self.id))
-							sys.stdout.write("===============================================\n")
-							sys.stdout.flush()
-							# BLUELED ON (HIGH)
-							
-							# self.timer1.cancel()
-							self.outputs.insert(0, [self.blueled_port, LED_ON, 'BLUE LED ON'])
-							self.outputs.insert(0, [self.power_port, POWER_OFF, 'POWER OFF'])
-									
-							self.client.working_state = gout_2_state
-							sys.stdout.write('\r\ngout_2_state\r\n')
-						elif ("Please press Enter to activate this console." in response) :
-							self.client.write("\r\n\r\n")
+							# print(type(response.split('=')[1]), response.split('=')[1])
+							self.readableMacaddr.append(str(response.split('=')[1].split('\n')[0]))
+
+							self.timer1.cancel()
+							self.timer1 = threading.Timer(3.0, timeoutfunc)
+							IsTimeout = 0
+							self.timer1.start()
 						else:
-							self.client.write("\r\n")
-                                                
-                                                        
-						response = ""
+							sys.stdout.write("\r\nIt is not WIZnet MAC address (%s)\r\n" % response )
+							# sys.stdout.write("mac_check_2_state timeout")
+							self.timer1.cancel()
+							self.client.working_state = fail_state
+							# sys.stdout.write('\r\nfail_state\r\n')
 							
-					# if IsTimeout is 1:
-					# 	sys.stdout.write("done_state timeout")
-					# 	self.timer1.cancel()
-					# 	self.client.working_state = fail_state
-					# 	sys.stdout.write('\r\nfail_state\r\n')
+					response = ""
+
+					if IsTimeout is 1:
+						sys.stdout.write("\r\nIt is not WIZnet MAC address\r\n")
+						# sys.stdout.write("mac_check_2_state timeout")
+						self.timer1.cancel()
+						self.client.working_state = fail_state
+						sys.stdout.write('\r\nfail_state\r\n')
+
+				elif self.client.working_state == mac_check_4_state:
+					try:
+						self.outputs.insert(0, [self.blueled_port, LED_ON, 'BLUE LED ON'])
+						self.outputs.insert(0, [self.redled_port, LED_ON, 'RED LED ON'])
+						self.outputs.insert(0, [self.power_port, POWER_OFF, 'POWER OFF'])
+						
+
+						self.client.working_state = gout_2_state
+					except Exception as e:
+						sys.stdout.write('%r\r\n' % e)
+						sys.stdout.write('timer1 stop\r\n')
 
 				elif self.client.working_state == fail_state:
 					self.outputs.insert(0, [self.redled_port, LED_ON, 'RED LED ON'])
 					self.outputs.insert(0, [self.power_port, POWER_OFF, 'POWER OFF'])
 					self.client.working_state = gout_2_state
-					sys.stdout.write('\r\ngout_2_state\r\n')
-			
+					# sys.stdout.write('\r\ngout_2_state\r\n')
+
 				elif self.client.working_state == gout_2_state:
 					if(len(self.outputs) == 0):
-						logger.debug("You can remove a module on bank%r now\r\n" % self.id)						
+						sys.stdout.write("You can remove a module on bank%r now ------[%r]\r\n" % (self.id,self.id))
 						self.client.working_state = idle_state
-						sys.stdout.write('\r\nidle_state\r\n')
+						# sys.stdout.write('\r\nidle_state\r\n')
 
 		
 		sys.stdout.write('[ComThread %r] Bye! \r\n' % self.id)
